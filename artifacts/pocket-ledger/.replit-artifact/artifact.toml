@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "Pocket Ledger"
+description = "A mobile receipt and shared-expense tracker that helps people scan receipts, split items among friends, see who owes them, and record what they owe others with secure account sign-in."
+version = "1.0.0"
+id = "artifacts/pocket-ledger"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 18896
+
+[services.development]
+run = "pnpm --filter @workspace/pocket-ledger run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pocket-ledger", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/pocket-ledger", "run", "serve" ]
+
+[services.env]
+PORT = "18896"
+BASE_PATH = "/"
