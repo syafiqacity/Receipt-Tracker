@@ -31,6 +31,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="add-receipt" options={{ title: 'New receipt', presentation: 'modal' }} />
       <Stack.Screen name="add-debt" options={{ title: 'New debt', presentation: 'modal' }} />
+      <Stack.Screen name="add-owed" options={{ title: 'Money owed to me', presentation: 'modal' }} />
       <Stack.Screen name="person/[id]" options={{ title: 'Person' }} />
       <Stack.Screen name="receipt/[id]" options={{ title: 'Receipt' }} />
     </Stack>

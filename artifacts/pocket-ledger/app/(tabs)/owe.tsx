@@ -9,6 +9,7 @@ import { Card, EmptyState, IconButton, Money, Screen, SectionLabel, TopBar } fro
 export default function OweScreen() {
   const colors = useColors();
   const { debts, totalIOwe, toggleDebtPaid } = useLedger();
+  const owedByMe = debts.filter((debt) => debt.direction !== 'owed_to_me');
   return (
     <Screen>
       <TopBar title="I owe" subtitle="Your side of the ledger." action={<IconButton icon="plus" label="Add a debt" onPress={() => router.push('/add-debt')} tone="tinted" />} />
@@ -20,18 +21,18 @@ export default function OweScreen() {
       <View style={styles.section}>
         <SectionLabel>Open balances</SectionLabel>
         <View style={styles.list}>
-          {debts.filter((debt) => !debt.paid).length === 0 ? (
+          {owedByMe.filter((debt) => !debt.paid).length === 0 ? (
             <EmptyState icon="corner-up-right" title="Nothing outstanding" message="Add something you owe a friend, family member, or business." action={<Pressable onPress={() => router.push('/add-debt')}><Text style={[styles.link, { color: colors.primary }]}>Add your first debt</Text></Pressable>} />
-          ) : debts.filter((debt) => !debt.paid).map((debt) => (
+          ) : owedByMe.filter((debt) => !debt.paid).map((debt) => (
             <DebtRow key={debt.id} debt={debt} onToggle={() => void toggleDebtPaid(debt.id)} />
           ))}
         </View>
       </View>
-      {debts.some((debt) => debt.paid) && (
+      {owedByMe.some((debt) => debt.paid) && (
         <View style={styles.section}>
           <SectionLabel>Settled</SectionLabel>
           <View style={styles.list}>
-            {debts.filter((debt) => debt.paid).map((debt) => <DebtRow key={debt.id} debt={debt} onToggle={() => void toggleDebtPaid(debt.id)} />)}
+            {owedByMe.filter((debt) => debt.paid).map((debt) => <DebtRow key={debt.id} debt={debt} onToggle={() => void toggleDebtPaid(debt.id)} />)}
           </View>
         </View>
       )}

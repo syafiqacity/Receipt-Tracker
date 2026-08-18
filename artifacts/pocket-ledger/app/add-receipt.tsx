@@ -6,14 +6,25 @@ import { useColors } from '@/hooks/useColors';
 import { ReceiptItem, useLedger } from '@/components/LedgerProvider';
 import { Card, IconButton, PrimaryButton, Screen, SectionLabel } from '@/components/ui';
 
-type DraftItem = ReceiptItem & { personIds: string[] };
+type DraftItem = ReceiptItem & { personIds: string[]; priceText: string };
+
+function makeDraftItem(): DraftItem {
+  return { id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', price: 0, personIds: [], priceText: '' };
+}
+
+function sanitizeAmount(value: string): string {
+  const normalized = value.replace(/,/g, '.').replace(/[^\d.]/g, '');
+  const [whole = '', ...decimals] = normalized.split('.');
+  if (decimals.length === 0) return whole;
+  return `${whole || '0'}.${decimals.join('').slice(0, 2)}`;
+}
 
 export default function AddReceiptScreen() {
   const colors = useColors();
   const { people, addReceipt } = useLedger();
   const [merchant, setMerchant] = useState('');
   const [imageUri, setImageUri] = useState<string>();
-  const [items, setItems] = useState<DraftItem[]>([{ id: `item-${Date.now()}`, name: '', price: 0, personIds: [] }]);
+  const [items, setItems] = useState<DraftItem[]>([makeDraftItem()]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -29,8 +40,18 @@ export default function AddReceiptScreen() {
     if (!result.canceled) setImageUri(result.assets[0]?.uri);
   };
 
-  const updateItem = (id: string, field: 'name' | 'price', value: string) => {
-    setItems((current) => current.map((item) => item.id !== id ? item : { ...item, [field]: field === 'price' ? Number(value.replace(/[^0-9.]/g, '')) || 0 : value }));
+  const updateItemName = (id: string, value: string) => {
+    setItems((current) => current.map((item) => item.id !== id ? item : { ...item, name: value }));
+  };
+
+  const updateItemPrice = (id: string, value: string) => {
+    const priceText = sanitizeAmount(value);
+    const numeric = Number(priceText);
+    setItems((current) => current.map((item) => item.id !== id ? item : {
+      ...item,
+      price: Number.isFinite(numeric) ? numeric : 0,
+      priceText,
+    }));
   };
 
   const togglePerson = (itemId: string, personId: string) => {
@@ -50,7 +71,7 @@ export default function AddReceiptScreen() {
       const share = Math.round((item.price / recipients.length) * 100) / 100;
       return recipients.map((personId) => ({ id: `split-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, itemId: item.id, personId, amount: share, paid: false }));
     });
-    const receipt = await addReceipt({ merchant, items: validItems.map(({ personIds: _personIds, ...item }) => item), splits, imageUri });
+    const receipt = await addReceipt({ merchant, items: validItems.map(({ personIds: _personIds, priceText: _priceText, ...item }) => item), splits, imageUri });
     setSaving(false);
     router.replace(`/receipt/${receipt.id}`);
   };
@@ -65,11 +86,11 @@ export default function AddReceiptScreen() {
       </Card>
       <View style={styles.form}>
         <View style={styles.field}><SectionLabel>Where was it?</SectionLabel><TextInput testID="input-merchant" value={merchant} onChangeText={setMerchant} placeholder="e.g. Jaya Grocer, Nando’s" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} /></View>
-        <View style={styles.itemsHeader}><SectionLabel>Items</SectionLabel><Pressable onPress={() => setItems((current) => [...current, { id: `item-${Date.now()}`, name: '', price: 0, personIds: [] }])}><Text style={[styles.addText, { color: colors.primary }]}>+ Add item</Text></Pressable></View>
+        <View style={styles.itemsHeader}><SectionLabel>Items</SectionLabel><Pressable onPress={() => setItems((current) => [...current, makeDraftItem()])}><Text style={[styles.addText, { color: colors.primary }]}>+ Add item</Text></Pressable></View>
         <View style={styles.itemsList}>
           {items.map((item, index) => (
             <Card key={item.id} style={styles.itemCard}>
-              <View style={styles.itemTitleRow}><Text style={[styles.itemNumber, { color: colors.mutedForeground }]}>0{index + 1}</Text><TextInput testID={`input-item-name-${index}`} value={item.name} onChangeText={(value) => updateItem(item.id, 'name', value)} placeholder="Item name" placeholderTextColor={colors.mutedForeground} style={[styles.itemNameInput, { color: colors.foreground }]} /><TextInput testID={`input-item-price-${index}`} value={item.price ? item.price.toFixed(2) : ''} onChangeText={(value) => updateItem(item.id, 'price', value)} placeholder="0.00" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" style={[styles.priceInput, { color: colors.foreground }]} /></View>
+              <View style={styles.itemTitleRow}><Text style={[styles.itemNumber, { color: colors.mutedForeground }]}>0{index + 1}</Text><TextInput testID={`input-item-name-${index}`} value={item.name} onChangeText={(value) => updateItemName(item.id, value)} placeholder="Item name" placeholderTextColor={colors.mutedForeground} style={[styles.itemNameInput, { color: colors.foreground }]} /><TextInput testID={`input-item-price-${index}`} value={item.priceText} onChangeText={(value) => updateItemPrice(item.id, value)} placeholder="0.00" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" inputMode="decimal" style={[styles.priceInput, { color: colors.foreground }]} /></View>
               <Text style={[styles.splitLabel, { color: colors.mutedForeground }]}>Who shared this?</Text>
               <View style={styles.chips}>{people.length === 0 ? <Text style={[styles.noPeople, { color: colors.mutedForeground }]}>Add people first from the People tab.</Text> : people.map((person) => <Pressable key={person.id} onPress={() => togglePerson(item.id, person.id)} style={[styles.chip, { backgroundColor: item.personIds.includes(person.id) ? colors.primary : colors.secondary }]}><Text style={[styles.chipText, { color: item.personIds.includes(person.id) ? colors.primaryForeground : colors.secondaryForeground }]}>{person.name}</Text></Pressable>)}</View>
             </Card>

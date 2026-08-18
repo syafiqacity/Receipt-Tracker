@@ -46,6 +46,7 @@ export type Debt = {
   amount: number;
   date: string;
   paid: boolean;
+  direction?: 'i_owe' | 'owed_to_me';
 };
 
 type LedgerData = {
@@ -62,6 +63,7 @@ type AddReceiptInput = {
 };
 
 type AddDebtInput = Omit<Debt, 'id' | 'date' | 'paid'>;
+type AddOwedInput = Omit<Debt, 'id' | 'date' | 'paid' | 'direction'>;
 
 type PersonSummary = {
   outstanding: number;
@@ -74,6 +76,7 @@ type LedgerContextValue = LedgerData & {
   addPerson: (name: string) => Promise<Person | null>;
   addReceipt: (input: AddReceiptInput) => Promise<Receipt>;
   addDebt: (input: AddDebtInput) => Promise<Debt>;
+  addOwed: (input: AddOwedInput) => Promise<Debt>;
   toggleSplitPaid: (receiptId: string, splitId: string) => Promise<void>;
   toggleDebtPaid: (debtId: string) => Promise<void>;
   getPersonSummary: (personId: string) => PersonSummary;
@@ -178,6 +181,22 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
         id: makeId('debt'),
         date: new Date().toISOString(),
         paid: false,
+        direction: 'i_owe',
+      };
+      await persist({ ...data, debts: [debt, ...data.debts] });
+      return debt;
+    },
+    [data, persist],
+  );
+
+  const addOwed = useCallback(
+    async (input: AddOwedInput) => {
+      const debt: Debt = {
+        ...input,
+        id: makeId('owed'),
+        date: new Date().toISOString(),
+        paid: false,
+        direction: 'owed_to_me',
       };
       await persist({ ...data, debts: [debt, ...data.debts] });
       return debt;
@@ -256,16 +275,19 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
               .filter((split) => !split.paid)
               .reduce((itemSum, split) => itemSum + split.amount, 0),
           0,
-        ),
+        ) +
+          data.debts
+            .filter((debt) => debt.direction === 'owed_to_me' && !debt.paid)
+            .reduce((sum, debt) => sum + debt.amount, 0),
       ),
-    [data.receipts],
+    [data.debts, data.receipts],
   );
 
   const totalIOwe = useMemo(
     () =>
       roundMoney(
         data.debts
-          .filter((debt) => !debt.paid)
+          .filter((debt) => debt.direction !== 'owed_to_me' && !debt.paid)
           .reduce((sum, debt) => sum + debt.amount, 0),
       ),
     [data.debts],
@@ -274,8 +296,13 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
   const outstandingPeople = useMemo(
     () =>
       data.people.filter((person) => getPersonSummary(person.id).outstanding > 0)
-        .length,
-    [data.people, getPersonSummary],
+        .length +
+      new Set(
+        data.debts
+          .filter((debt) => debt.direction === 'owed_to_me' && !debt.paid)
+          .map((debt) => debt.personName.trim().toLowerCase()),
+      ).size,
+    [data.debts, data.people, getPersonSummary],
   );
 
   const value = useMemo(
@@ -285,6 +312,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
       addPerson,
       addReceipt,
       addDebt,
+      addOwed,
       toggleSplitPaid,
       toggleDebtPaid,
       getPersonSummary,
@@ -294,6 +322,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
     }),
     [
       addDebt,
+      addOwed,
       addPerson,
       addReceipt,
       data,
