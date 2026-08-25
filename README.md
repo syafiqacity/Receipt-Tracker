@@ -27,15 +27,15 @@ The application includes account authentication and data persistence so financia
 ### Login Page
 ![Login Page](Screenshots/Login_page.jpg)
 ### Overview Page
-![Overview Page](Screenshots/Overview.jpg)
+![Overview_Page](Screenshots/Overview.jpg)
 ### People Page
-![People Page](Screenshots/People.jpg)
+![People_Page](Screenshots/People.jpg)
 ### "I owe" Page
-![I owe Page](Screenshots/I_owe.jpg)
+![I_owe_Page](Screenshots/I_owe.jpg)
 ### Add New Receipt Page
-![Add New Receipt Page](Screenshots/Add_new_receipt.jpg)
+![Add_New_Receipt_Page](Screenshots/Add_new_receipt.jpg)
 ### Add New Debt Page
-![Add New Debt Page](Screenshots/Add_new_debt.jpg)
+![Add_New_Debt_Page](Screenshots/Add_new_debt.jpg)
 
 ---
 
