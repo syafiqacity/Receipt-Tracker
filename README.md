@@ -6,6 +6,8 @@ Pocket Ledger helps users keep track of shared expenses and personal debts in on
 
 > **⚠️ Development Status:** Pocket Ledger is currently **unfinished and under development**. The core features have been implemented and verified in the mobile preview, but several improvements and fixes are still planned.
 
+***Notes:*** This is a free time mobile application that i made using **Replit** and are still under development which are yet to be published. The mobile application can be tried by scanning the barcode from **Build Screenshots** using **Expo Go**.
+
 ---
 
 ## 📱 About the App
